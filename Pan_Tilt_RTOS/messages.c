@@ -112,10 +112,11 @@ void messages_rx_task()
 				{
 				case SET_TILT:
 					//Send to PID queue for tilt
-					//xQueueSend(uart_tx_queue, &coordinates, portMAX_DELAY);
+					xQueueSend(pid_tilt_setp_queue, &coordinates, portMAX_DELAY);
 					break;
 				case SET_PAN:
 					//Send to PID queue for pan
+					xQueueSend(pid_pan_setp_queue, &coordinates, portMAX_DELAY);
 					break;
 				default:
 					break;

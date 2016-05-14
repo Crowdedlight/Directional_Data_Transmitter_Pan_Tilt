@@ -36,6 +36,7 @@
 #include "uart.h"
 #include "messages.h"
 #include "status_led.h"
+#include "pid.h"
 
 
 /*****************************    Defines    *******************************/
@@ -44,22 +45,32 @@
 #define LOW_PRIO  1
 #define MED_PRIO  2
 #define HIGH_PRIO 3
+#define PID_PRIO  4
 #define INCLUDE_vTaskSuspend 1
 
 /*****************************   Constants   *******************************/
 
 /*****************************   Variables   *******************************/
 
-//Queues
+/*****************************    Queues     *******************************/
+
+//Uart
 extern xQueueHandle uart_rx_queue;
 extern xQueueHandle uart_tx_queue;
 
+//SPI
 extern xQueueHandle spi_rx_queue;
 extern xQueueHandle spi_tx_queue;
 
-//Semaphores
-extern xSemaphoreHandle uart_rx_mutex;
-extern xSemaphoreHandle uart_tx_mutex;
+//PID
+extern xQueueHandle pid_pan_pos_queue;
+extern xQueueHandle pid_tilt_pos_queue;
+extern xQueueHandle pid_pan_setp_queue;
+extern xQueueHandle pid_tilt_setp_queue;
+extern xQueueHandle pid_pan_duty_queue;
+extern xQueueHandle pid_tilt_duty_queue;
+
+/*****************************  Semaphores   *******************************/
 
 
 
@@ -88,21 +99,31 @@ int main(void)
 
   setupHardware();
 
-  //Make Queues
+  /*********** Setup Queues ***********/
+
+  //uart
   uart_rx_queue = xQueueCreate(50, sizeof(INT8U));
   uart_tx_queue = xQueueCreate(50, sizeof(INT8U));
 
   //spi_rx_queue = xQueueCreate(50, sizeof(INT32U));
   spi_tx_queue = xQueueCreate(50, sizeof(INT16U));
 
-  //Make Semaphors
-  uart_rx_mutex = xSemaphoreCreateMutex();
-  uart_tx_mutex = xSemaphoreCreateMutex();
+  //PID
+  pid_pan_pos_queue   = xQueueCreate( 5, sizeof( INT16U ) );
+  pid_tilt_pos_queue  = xQueueCreate( 5, sizeof( INT16U ) );
+  pid_pan_setp_queue  = xQueueCreate( 5, sizeof( INT16U ) );
+  pid_tilt_setp_queue = xQueueCreate( 5, sizeof( INT16U ) );
+  pid_pan_duty_queue  = xQueueCreate( 5, sizeof( INT8U ) );
+  pid_tilt_duty_queue = xQueueCreate( 5, sizeof( INT8U ) );
 
-  // Start the tasks defined within this file/specific to this demo.
+  /********** Setup Semaphores **********/
+
+
+  /************ Start Tasks *************/
   return_value &= xTaskCreate(uart_tx_task, (signed portCHAR * ) "uart Transmit", USERTASK_STACK_SIZE, NULL, LOW_PRIO, NULL );
   return_value &= xTaskCreate(spi_task, (signed portCHAR * ) "spi task", USERTASK_STACK_SIZE, NULL, MED_PRIO, NULL);
   return_value &= xTaskCreate(messages_rx_task, (signed portCHAR * ) "messages task", USERTASK_STACK_SIZE, NULL, MED_PRIO, NULL );
+  return_value &= xTaskCreate(controller_task, (signed portCHAR * ) "PID Controller", USERTASK_STACK_SIZE, NULL, PID_PRIO, NULL );
 
   return_value &= xTaskCreate(status_led_task, ( signed portCHAR * ) 	"Status LED", 	USERTASK_STACK_SIZE, NULL, LOW_PRIO, NULL );
 

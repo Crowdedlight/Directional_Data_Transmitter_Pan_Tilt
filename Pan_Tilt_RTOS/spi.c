@@ -59,7 +59,9 @@ void writeSPI(int enable1, INT8U motor1, int enable2, INT8U motor2)
 	rxData |= (SSI3_DR_R << 0);
 
 	//save to queue
-	xQueueSendToBack(spi_rx_queue, &rxData, 10);
+	//xQueueSendToBack(spi_rx_queue, &rxData, 10);
+
+	// TODO Do we want to send directly to pan/tilt feedback queue, or do another process do that?
 
 	PAN_value = ( rxData & 0b111111111111000000000000) >> 12;
 	TILT_value = rxData & 0b11111111111;
