@@ -18,19 +18,7 @@
 *****************************************************************************/
 
 /***************************** Include files *******************************/
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include "tm4c123gh6pm.h"
-#include "EMP/emp_type.h"
-#include "EMP/glob_def.h"
-#include "FreeRTOS.h"
-#include "queue.h"
-#include "semphr.h"
-#include "uart.h"
 #include "messages.h"
-
 /*****************************    Defines    *******************************/
 
 #define MAX_MSG_SIZE 10
@@ -43,9 +31,6 @@ enum message_type { SET_TILT, SET_PAN } message;
 enum state { CLEAR, RECIEVE, INTERPRET, EXECUTE } state;
 
 /*****************************   Functions   *******************************/
-extern xQueueHandle uart_rx_queue;
-extern xQueueHandle uart_tx_queue;
-
 
 void messages_rx_task()
 {
@@ -57,8 +42,6 @@ void messages_rx_task()
 
 	INT8U temp;
 	INT8U inMessage[MAX_MSG_SIZE];
-	INT8U msgLength;
-	BOOLEAN msgRecieved;
 	INT16U coordinates;
 	INT8U pointer;
 
@@ -71,8 +54,6 @@ void messages_rx_task()
 		{
 			case CLEAR:
 				//clearing variables
-				msgRecieved = FALSE;
-				msgLength = 0;
 				pointer = 0;
 				temp = 0;
 				state = RECIEVE;
@@ -85,7 +66,6 @@ void messages_rx_task()
 				if(temp == ';')
 				{
 					state = INTERPRET;
-					msgLength = pointer;
 				}
 				else
 				{
