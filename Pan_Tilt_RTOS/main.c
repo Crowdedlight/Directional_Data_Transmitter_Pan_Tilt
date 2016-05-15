@@ -37,6 +37,7 @@
 #include "messages.h"
 #include "status_led.h"
 #include "pid.h"
+#include "app_tasks.h"
 
 
 /*****************************    Defines    *******************************/
@@ -105,7 +106,7 @@ int main(void)
   uart_rx_queue = xQueueCreate(50, sizeof(INT8U));
   uart_tx_queue = xQueueCreate(50, sizeof(INT8U));
 
-  //spi_rx_queue = xQueueCreate(50, sizeof(INT32U));
+  spi_rx_queue = xQueueCreate(50, sizeof(INT32U));
   spi_tx_queue = xQueueCreate(50, sizeof(INT16U));
 
   //PID
@@ -124,6 +125,7 @@ int main(void)
   return_value &= xTaskCreate(spi_task, (signed portCHAR * ) "spi task", USERTASK_STACK_SIZE, NULL, MED_PRIO, NULL);
   return_value &= xTaskCreate(messages_rx_task, (signed portCHAR * ) "messages task", USERTASK_STACK_SIZE, NULL, MED_PRIO, NULL );
   return_value &= xTaskCreate(controller_task, (signed portCHAR * ) "PID Controller", USERTASK_STACK_SIZE, NULL, PID_PRIO, NULL );
+  return_value &= xTaskCreate(communication_task, (signed portCHAR * ) "communication task", USERTASK_STACK_SIZE, NULL, HIGH_PRIO, NULL );
 
   return_value &= xTaskCreate(status_led_task, ( signed portCHAR * ) 	"Status LED", 	USERTASK_STACK_SIZE, NULL, LOW_PRIO, NULL );
 

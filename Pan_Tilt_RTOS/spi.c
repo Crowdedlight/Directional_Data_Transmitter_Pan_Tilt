@@ -30,23 +30,20 @@
 xQueueHandle spi_rx_queue;
 xQueueHandle spi_tx_queue;
 
-
-INT16U PAN_value;
-INT16U TILT_value;
 /*****************************   Functions   *******************************/
 
-void writeSPI(int enable1, INT8U motor1, int enable2, INT8U motor2)
+void writeSPI(int enable1, INT8U PAN, int enable2, INT8U TILT)
 {
 	// set slaveselect low
 	GPIO_PORTD_DATA_R &= ~(1<<1); //ss low => Start Transmission
 
-	SSI3_DR_R = (enable1 << 7) | (motor1 << 0);
+	SSI3_DR_R = (enable1 << 7) | (PAN << 0);
 	while( (SSI3_SR_R & (1<<0)) == 0);
 
 	//Get return data
 	INT32U rxData = (SSI3_DR_R << 16);
 
-	SSI3_DR_R = (enable2 << 7) | (motor2 << 0);
+	SSI3_DR_R = (enable2 << 7) | (TILT << 0);
 	while( (SSI3_SR_R & (1<<0)) == 0);
 
 	//Get return data
@@ -59,15 +56,7 @@ void writeSPI(int enable1, INT8U motor1, int enable2, INT8U motor2)
 	rxData |= (SSI3_DR_R << 0);
 
 	//save to queue
-	//xQueueSendToBack(spi_rx_queue, &rxData, 10);
-
-	// TODO Do we want to send directly to pan/tilt feedback queue, or do another process do that?
-
-	PAN_value = ( rxData & 0b111111111111000000000000) >> 12;
-	TILT_value = rxData & 0b11111111111;
-
-	//Send to Pan queue
-	//Send to Tilt Queue
+	xQueueSendToBack(spi_rx_queue, &rxData, 10);
 
 	for(int i = 0; i <5; i++);
 	GPIO_PORTD_DATA_R |= (1<<1); //end transmission
