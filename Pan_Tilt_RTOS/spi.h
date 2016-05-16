@@ -23,8 +23,10 @@
 #include <stdint.h>
 #include "tm4c123gh6pm.h"
 #include "EMP/emp_type.h"
+#include "EMP/glob_def.h"
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "uart.h"
 
 /***************************** Include files *******************************/
 

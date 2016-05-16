@@ -23,11 +23,14 @@
 #include <stdint.h>
 #include "tm4c123gh6pm.h"
 #include "EMP/emp_type.h"
+#include "EMP/glob_def.h"
 #include "timer.h"
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "uart.h"
 //#include "semphr.h"
 
+extern xQueueHandle uart_tx_queue;
 
 /*****************************    Defines    *******************************/
 
@@ -46,6 +49,10 @@ xQueueHandle pid_tilt_setp_queue;
 // Output queues for duty cycles to be sent to pan and tilt system
 xQueueHandle pid_pan_duty_queue;
 xQueueHandle pid_tilt_duty_queue;
+
+//DEBUG TODO REMOVE
+INT16U pan_debug;
+INT16U tilt_debug;
 
 /*****************************   Functions   *******************************/
 INT16S pid_p_part( INT16S err );

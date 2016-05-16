@@ -30,6 +30,11 @@
 xQueueHandle spi_rx_queue;
 xQueueHandle spi_tx_queue;
 
+INT8U first;
+INT8U second;
+INT8U third;
+BOOLEAN once = FALSE;
+extern xQueueHandle uart_tx_queue;
 /*****************************   Functions   *******************************/
 
 void writeSPI(int enable1, INT8U PAN, int enable2, INT8U TILT)
@@ -41,25 +46,59 @@ void writeSPI(int enable1, INT8U PAN, int enable2, INT8U TILT)
 	while( (SSI3_SR_R & (1<<0)) == 0);
 
 	//Get return data
-	INT32U rxData = (SSI3_DR_R << 16);
+	//INT32U rxData = (SSI3_DR_R << 16);
+	first = 0b11111111;//SSI3_DR_R;
 
 	SSI3_DR_R = (enable2 << 7) | (TILT << 0);
 	while( (SSI3_SR_R & (1<<0)) == 0);
 
 	//Get return data
-	rxData |= (SSI3_DR_R << 8);
+	//rxData |= (SSI3_DR_R << 8);
+	second = 0b00000000; //SSI3_DR_R;
 
 	SSI3_DR_R = 0; //Dummy send to recieve full data from FPGA
 	while( (SSI3_SR_R & (1<<0)) == 0);
 
 	//Get return data
-	rxData |= (SSI3_DR_R << 0);
+	//rxData |= (SSI3_DR_R << 0);
+	third = 0b10101010; //SSI3_DR_R;
 
-	//save to queue
-	xQueueSendToBack(spi_rx_queue, &rxData, 10);
+
+	//xQueueSendToBack(uart_tx_queue, &first, 10);
+	//xQueueSendToBack(uart_tx_queue, &second, 10);
+	//xQueueSendToBack(uart_tx_queue, &third, 10);
+	if (!once)
+				{
+					xQueueSendToBack(uart_tx_queue, &first, 20);
+					xQueueSendToBack(uart_tx_queue, &second, 20);
+					xQueueSendToBack(uart_tx_queue, &third, 20);
+					once = FALSE;
+				}
 
 	for(int i = 0; i <5; i++);
 	GPIO_PORTD_DATA_R |= (1<<1); //end transmission
+
+	//save to queue
+	INT32U rxData = (first << 16) | (second << 8) | (third);
+
+	/*if (!once)
+			{
+				INT8U temp2 = (rxData & 0b1111111100000000) >> 8;
+				xQueueSendToBack(uart_tx_queue, &second, 10);
+				temp2 = (rxData & 0b11111111);
+				xQueueSendToBack(uart_tx_queue, &third, 10);
+				once = TRUE;
+			}*/
+
+	//INT8U debugT = (rxData & 0b111111110000000000000000) >> 16;
+	//xQueueSendToBack(uart_tx_queue, &debugT, 10);
+	//debugT = (rxData & 0b000000001111111100000000)>> 8;
+	//xQueueSendToBack(uart_tx_queue, &debugT, 10);
+	//debugT = (rxData & 0b11111111);
+	//xQueueSendToBack(uart_tx_queue, &debugT, 10);
+
+
+	xQueueSendToBack(spi_rx_queue, &rxData, 10);
 }
 
 void spi_task()
@@ -73,15 +112,15 @@ void spi_task()
 
 		//Start transmitting
 
-		//Motor1
-		INT8U M1 = (msg & 0b0111111100000000)>>8;
-		INT8U enM1 = (msg & 0b1000000000000000)>>15;
-		//Motor2
-		INT8U M2 = msg & 0b01111111;
-		INT8U enM2 = (msg & 0b10000000)>>7;
+		//PAN
+		INT8U PAN = (msg & 0b0111111100000000)>>8;
+		INT8U enPAN = (msg & 0b1000000000000000)>>15;
+		//Tilt
+		INT8U TILT = msg & 0b01111111;
+		INT8U enTILT = (msg & 0b10000000)>>7;
 
 		//Send data
-		writeSPI(enM1, M1, enM2, M2);
+		writeSPI(enPAN, PAN, enTILT, TILT);
 	}
 }
 

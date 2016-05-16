@@ -207,7 +207,8 @@ void controller_task()
 {
 	/********** Create variables ************/
 	// State
-	enum pid_state_type { CALIBRATE, CONTROL } pid_state = CALIBRATE;
+	enum pid_state_type { CALIBRATE, CONTROL };
+	enum pid_state_type pid_state = CALIBRATE;
 
 	// Time passed since last sample
 	INT32U dt = 0;
@@ -217,7 +218,7 @@ void controller_task()
 	INT16U tilt_pos = 0;
 
 	// Set-points (desired positions)
-	INT16U pan_setp  = 700;	// NOTE: 700 is used for calibration
+	INT16U pan_setp  = 530;	// NOTE: 700 is used for calibration
 	INT16U tilt_setp = 700;	// NOTE: 700 is used for calibration
 
 	// Current errors
@@ -247,11 +248,11 @@ void controller_task()
 	// Calculate first errors
 	pan_err       = pan_setp - pan_pos;
 	tilt_err      = tilt_setp - tilt_pos;
-	pan_prev_err  = pan_err;
-	tilt_prev_err = tilt_err;
 
 	// Start timing
 	timer0_start();
+
+	BOOLEAN once = FALSE;
 
 	/********** Superloop *******************/
 	while (1) {
@@ -266,15 +267,40 @@ void controller_task()
 		// Calculate errors
 		pan_err  = pan_setp - pan_pos;
 		tilt_err = tilt_setp - tilt_pos;
-		tilt_err = check_tilt_err_direction( tilt_err ); // Check which direction is shortest and convert tilt_err accordingly
 
-		// Calculate controller signal
-		pan_duty  = pid_calculate_duty( pan_err,  &pan_int_err,  pan_prev_err,  dt);
-		tilt_duty = pid_calculate_duty( tilt_err, &tilt_int_err, tilt_prev_err, dt);
+		pan_debug = pan_pos;
+		tilt_debug = tilt_pos;
 
-		// Update prev_err
-		pan_prev_err  = pan_err;
-		tilt_prev_err = tilt_err;
+		/*if (!once)
+		{
+			INT8U temp = (tilt_pos & 0b1111111100000000) >> 8;
+			xQueueSendToBack(uart_tx_queue, &temp, 10);
+			temp = (tilt_pos & 0b11111111);
+			xQueueSendToBack(uart_tx_queue, &temp, 10);
+			once = TRUE;
+		}*/
+
+
+		switch ( pid_state ) {
+			case CALIBRATE:
+				pan_duty  = 60;
+				tilt_duty = 65;
+				break;
+			case CONTROL:
+				// Check which direction is shortest and convert tilt_err accordingly
+				tilt_err = check_tilt_err_direction( tilt_err );
+
+				// Calculate controller signal
+				pan_duty  = pid_calculate_duty( pan_err,  &pan_int_err,  pan_prev_err,  dt);
+				tilt_duty = pid_calculate_duty( tilt_err, &tilt_int_err, tilt_prev_err, dt);
+
+				// Update prev_err
+				pan_prev_err  = pan_err;
+				tilt_prev_err = tilt_err;
+				break;
+			default:
+				break;
+		}
 
 		// Send duty cycles to queue (tilt must be send first)
 		xQueueSendToBack( pid_tilt_duty_queue, &tilt_duty, portMAX_DELAY );
@@ -283,8 +309,20 @@ void controller_task()
 		switch ( pid_state ) {
 			case CALIBRATE:
 				// Check if near calibration set-point
-				if ( ( pan_err > -10 || pan_err < 10 ) && ( tilt_err > -10 || tilt_err < 10 ) )
+				if ( ( pan_err > -20 && pan_err < 20 ) )
+					pan_duty = 50;
+				if ( ( tilt_err > -20 && tilt_err < 20 ) )
+					tilt_duty = 50;
+				if ( pan_duty == 50 && tilt_duty == 50 )
+				{
 					pid_state = CONTROL;
+
+					//debug
+					char debug = 'D';
+					//xQueueSendToBack(uart_tx_queue, &debug, 10);
+					xQueueSendToBack( pid_tilt_duty_queue, &tilt_duty, portMAX_DELAY );
+					xQueueSendToBack( pid_pan_duty_queue,  &pan_duty,  portMAX_DELAY );
+				}
 				break;
 			case CONTROL:
 				// Check if new set-point has been received
