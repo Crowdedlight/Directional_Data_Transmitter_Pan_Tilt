@@ -123,7 +123,6 @@ int main(void)
 
   /************ Start Tasks *************/
   return_value &= xTaskCreate(uart_tx_task, (signed portCHAR * ) "uart Transmit", USERTASK_STACK_SIZE, NULL, LOW_PRIO, NULL );
-  //return_value &= xTaskCreate(spi_task, (signed portCHAR * ) "spi task", USERTASK_STACK_SIZE, NULL, MED_PRIO, NULL);
   return_value &= xTaskCreate(messages_rx_task, (signed portCHAR * ) "messages task", USERTASK_STACK_SIZE, NULL, MED_PRIO, NULL );
   return_value &= xTaskCreate(controller_task, (signed portCHAR * ) "PID Controller", USERTASK_STACK_SIZE, NULL, PID_PRIO, NULL );
   return_value &= xTaskCreate(communication_task, (signed portCHAR * ) "communication task", USERTASK_STACK_SIZE, NULL, HIGH_PRIO, NULL );

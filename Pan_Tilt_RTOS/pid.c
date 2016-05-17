@@ -21,9 +21,9 @@
 
 /*****************************    Defines    *******************************/
 // Gain for each subsystem
-#define P_GAIN  1			// Corresponding to Kc
+#define P_GAIN  0.01		// Corresponding to Kc
 #define I_GAIN	P_GAIN*0	// Corresponding to Kc*Ki
-#define	D_GAIN	P_GAIN*0	// Corresponding to Kc*Kd
+#define	D_GAIN	P_GAIN*0//.06	// Corresponding to Kc*Kd
 
 // Limits for size of error integral
 #define MAX_INTEGRAL 10000000	// TODO: Check if this should be changed
@@ -44,7 +44,7 @@
 #define MIN_TILT_SETP 0
 
 // Zones in which the PWM may operate
-#define DEADZONE   10
+#define DEADZONE   6
 #define DUTY_RANGE 97 - (50 + DEADZONE) // Range of duty cycle in which the system function
 
 /*****************************   Constants   *******************************/
@@ -218,7 +218,7 @@ void controller_task()
 	INT16U tilt_pos = 0;
 
 	// Set-points (desired positions)
-	INT16U pan_setp  = 530;	// NOTE: 700 is used for calibration
+	INT16U pan_setp  = 640;	// NOTE: 700 is used for calibration
 	INT16U tilt_setp = 700;	// NOTE: 700 is used for calibration
 
 	// Current errors
@@ -237,6 +237,11 @@ void controller_task()
 	INT8U pan_duty  = 0;
 	INT8U tilt_duty = 0;
 
+	//Callibrate control
+	BOOLEAN pan_calibrated = FALSE;
+	BOOLEAN tilt_calibrated = FALSE;
+
+
 	/********** Initialize*******************/
 	// Set up Timer0
 	timer0_setup();
@@ -252,8 +257,6 @@ void controller_task()
 	// Start timing
 	timer0_start();
 
-	BOOLEAN once = FALSE;
-
 	/********** Superloop *******************/
 	while (1) {
 		// Wait for new position data (tilt must be read first)
@@ -268,27 +271,23 @@ void controller_task()
 		pan_err  = pan_setp - pan_pos;
 		tilt_err = tilt_setp - tilt_pos;
 
+
 		pan_debug = pan_pos;
 		tilt_debug = tilt_pos;
-
-		/*if (!once)
-		{
-			INT8U temp = (tilt_pos & 0b1111111100000000) >> 8;
-			xQueueSendToBack(uart_tx_queue, &temp, 10);
-			temp = (tilt_pos & 0b11111111);
-			xQueueSendToBack(uart_tx_queue, &temp, 10);
-			once = TRUE;
-		}*/
-
+		pan_err2 = pan_err;
+		tilt_err2 = tilt_err;
 
 		switch ( pid_state ) {
 			case CALIBRATE:
-				pan_duty  = 60;
-				tilt_duty = 65;
+				if (!pan_calibrated)
+					pan_duty  = 60;
+				if (!tilt_calibrated)
+					tilt_duty = 65;
 				break;
 			case CONTROL:
 				// Check which direction is shortest and convert tilt_err accordingly
 				tilt_err = check_tilt_err_direction( tilt_err );
+				tilt_err2 = tilt_err;
 
 				// Calculate controller signal
 				pan_duty  = pid_calculate_duty( pan_err,  &pan_int_err,  pan_prev_err,  dt);
@@ -309,19 +308,22 @@ void controller_task()
 		switch ( pid_state ) {
 			case CALIBRATE:
 				// Check if near calibration set-point
-				if ( ( pan_err > -20 && pan_err < 20 ) )
+				if ( ( pan_err > -10 && pan_err < 10 ) && !pan_calibrated)
+				{
 					pan_duty = 50;
-				if ( ( tilt_err > -20 && tilt_err < 20 ) )
+					xQueueSendToBack( pid_tilt_duty_queue, &pan_duty, portMAX_DELAY );
+					pan_calibrated = TRUE;
+				}
+				if ( ( tilt_err > -10 && tilt_err < 10 ) && !tilt_calibrated)
+				{
 					tilt_duty = 50;
+					xQueueSendToBack( pid_tilt_duty_queue, &tilt_duty, portMAX_DELAY );
+					tilt_calibrated = TRUE;
+				}
+
 				if ( pan_duty == 50 && tilt_duty == 50 )
 				{
 					pid_state = CONTROL;
-
-					//debug
-					char debug = 'D';
-					//xQueueSendToBack(uart_tx_queue, &debug, 10);
-					xQueueSendToBack( pid_tilt_duty_queue, &tilt_duty, portMAX_DELAY );
-					xQueueSendToBack( pid_pan_duty_queue,  &pan_duty,  portMAX_DELAY );
 				}
 				break;
 			case CONTROL:

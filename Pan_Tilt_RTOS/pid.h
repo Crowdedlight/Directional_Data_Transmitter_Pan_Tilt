@@ -53,6 +53,8 @@ xQueueHandle pid_tilt_duty_queue;
 //DEBUG TODO REMOVE
 INT16U pan_debug;
 INT16U tilt_debug;
+INT16S pan_err2;
+INT16S tilt_err2;
 
 /*****************************   Functions   *******************************/
 INT16S pid_p_part( INT16S err );
