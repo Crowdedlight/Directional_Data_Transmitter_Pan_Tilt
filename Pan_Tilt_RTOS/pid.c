@@ -21,7 +21,7 @@
 
 /*****************************    Defines    *******************************/
 // Gain for each subsystem
-#define P_GAIN  0.01		// Corresponding to Kc
+#define P_GAIN  0.001		// Corresponding to Kc
 #define I_GAIN	P_GAIN*0	// Corresponding to Kc*Ki
 #define	D_GAIN	P_GAIN*0//.06	// Corresponding to Kc*Kd
 
@@ -137,7 +137,7 @@ INT8U convert_to_duty( INT16S pid_out )
 		pid_out = -100;
 
 	// Convert to scale of duty cycle
-	INT8U duty = pid_out * DUTY_RANGE / 100;
+	INT8S duty = pid_out * DUTY_RANGE / 100;
 
 	// Shift out of motor's deadzone
 	if ( duty > 0 )
