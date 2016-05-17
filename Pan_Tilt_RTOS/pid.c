@@ -21,7 +21,7 @@
 
 /*****************************    Defines    *******************************/
 // Gain for each subsystem
-#define P_GAIN  0.001		// Corresponding to Kc
+#define P_GAIN  0.1		// Corresponding to Kc
 #define I_GAIN	P_GAIN*0	// Corresponding to Kc*Ki
 #define	D_GAIN	P_GAIN*0//.06	// Corresponding to Kc*Kd
 
@@ -30,11 +30,11 @@
 #define MIN_INTEGRAL -MAX_INTEGRAL
 
 // Maximum allowed outputs from the PID subsystems
-#define MAX_P_OUTPUT 0xFFFFFFFF // TODO: Should change to lower value (eg. 100) value to limit each part's output
+#define MAX_P_OUTPUT 0x7FFFFFFF // TODO: Should change to lower value (eg. 100) value to limit each part's output
 #define MIN_P_OUTPUT -MAX_P_OUTPUT
-#define MAX_I_OUTPUT 0xFFFFFFFF
+#define MAX_I_OUTPUT 0x7FFFFFFF
 #define MIN_I_OUTPUT -MAX_I_OUTPUT
-#define MAX_D_OUTPUT 0xFFFFFFFF
+#define MAX_D_OUTPUT 0x7FFFFFFF
 #define MIN_D_OUTPUT -MAX_I_OUTPUT
 
 // Limits for allowed set-points
@@ -45,7 +45,7 @@
 
 // Zones in which the PWM may operate
 #define DEADZONE   6
-#define DUTY_RANGE 97 - (50 + DEADZONE) // Range of duty cycle in which the system function
+#define DUTY_RANGE 75 - (50 + DEADZONE) // Range of duty cycle in which the system function
 
 /*****************************   Constants   *******************************/
 
@@ -118,8 +118,9 @@ INT8U pid_calculate_duty ( INT16S err, INT16S * int_err, INT16S prev_err, INT16U
 	INT16S output = 0;
 
 	output += pid_p_part( err );
-	output += pid_i_part( err, int_err,  dt );
-	output += pid_d_part( err, prev_err, dt );
+	//output += pid_i_part( err, int_err,  dt );
+	//output += pid_d_part( err, prev_err, dt );
+	//output = err*0.003;
 	output  = convert_to_duty( output );
 
 	return output;
@@ -137,7 +138,7 @@ INT8U convert_to_duty( INT16S pid_out )
 		pid_out = -100;
 
 	// Convert to scale of duty cycle
-	INT8S duty = pid_out * DUTY_RANGE / 100;
+	INT8S duty = (pid_out * DUTY_RANGE) / 100;
 
 	// Shift out of motor's deadzone
 	if ( duty > 0 )
@@ -147,6 +148,11 @@ INT8U convert_to_duty( INT16S pid_out )
 
 	// Move 0-reference to 50
 		duty += 50;
+
+	//	if (duty > 67)
+		//	duty = 90;
+	//	if (duty < 33)
+	//		duty = 10;
 
 	return duty;
 }
@@ -330,11 +336,11 @@ void controller_task()
 				// Check if new set-point has been received
 				if ( xQueueReceive( pid_tilt_setp_queue, &tilt_setp, 0 ) ) {
 					tilt_setp = deg10_to_encoder_counts( tilt_setp ); // Convert from 10th of degrees to encoder counts
-					tilt_setp = validate_tilt_setp( tilt_setp ); // Make sure tilt_setp is within the boundary
+					//tilt_setp = validate_tilt_setp( tilt_setp ); // Make sure tilt_setp is within the boundary
 				}
 				if ( xQueueReceive( pid_pan_setp_queue,  &pan_setp,  0 ) ) {
 					pan_setp = deg10_to_encoder_counts( pan_setp );  // Convert from 10th of degrees to encoder counts
-					pan_setp = validate_pan_setp( pan_setp ); // Make sure pan_setp is within the boundary
+					//pan_setp = validate_pan_setp( pan_setp ); // Make sure pan_setp is within the boundary
 				}
 				break;
 			default:
