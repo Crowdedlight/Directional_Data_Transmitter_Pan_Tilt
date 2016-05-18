@@ -21,12 +21,12 @@
 
 /*****************************    Defines    *******************************/
 // Gain for each subsystem
-#define P_GAIN  0.1		// Corresponding to Kc
-#define I_GAIN	P_GAIN*0	// Corresponding to Kc*Ki
-#define	D_GAIN	P_GAIN*0//.06	// Corresponding to Kc*Kd
+#define P_GAIN  0.1			// Corresponding to Kc
+#define I_GAIN	0.00005	// Corresponding to Kc*Ki
+#define	D_GAIN	P_GAIN*100	// Corresponding to Kc*Kd
 
 // Limits for size of error integral
-#define MAX_INTEGRAL 10000000	// TODO: Check if this should be changed
+#define MAX_INTEGRAL 100000	// TODO: Check if this should be changed
 #define MIN_INTEGRAL -MAX_INTEGRAL
 
 // Maximum allowed outputs from the PID subsystems
@@ -44,7 +44,7 @@
 #define MIN_TILT_SETP 0
 
 // Zones in which the PWM may operate
-#define DEADZONE   6
+#define DEADZONE   4
 #define DUTY_RANGE 75 - (50 + DEADZONE) // Range of duty cycle in which the system function
 
 /*****************************   Constants   *******************************/
@@ -97,7 +97,7 @@ INT16S pid_d_part( INT16S err, INT16S prev_err, INT16U dt )
 *****************************************************************************/
 {
 	// Calculate error derivative
-	INT32S err_der = ( err - prev_err ) * dt; // OBS. dt is in units of ms/10
+	INT32S err_der = ( ( err - prev_err ) / dt ) * 10000; // OBS. dt is in units of ms/10. Multiply by 10000 to get err_der n counts/second
 
 	// Calculate output
 	INT32S output = err_der * D_GAIN;
@@ -118,9 +118,8 @@ INT8U pid_calculate_duty ( INT16S err, INT16S * int_err, INT16S prev_err, INT16U
 	INT16S output = 0;
 
 	output += pid_p_part( err );
-	//output += pid_i_part( err, int_err,  dt );
-	//output += pid_d_part( err, prev_err, dt );
-	//output = err*0.003;
+	output += pid_i_part( err, int_err,  dt );
+	output += pid_d_part( err, prev_err, dt );
 	output  = convert_to_duty( output );
 
 	return output;
@@ -148,11 +147,6 @@ INT8U convert_to_duty( INT16S pid_out )
 
 	// Move 0-reference to 50
 		duty += 50;
-
-	//	if (duty > 67)
-		//	duty = 90;
-	//	if (duty < 33)
-	//		duty = 10;
 
 	return duty;
 }
