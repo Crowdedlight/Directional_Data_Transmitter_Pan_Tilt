@@ -52,6 +52,10 @@
 #define PAN_DEADZONE   4
 #define PAN DUTY_RANGE 97 - (50 + TILT_DEADZONE) // Range of duty cycle in which the system function
 
+// Times the PID should run before reaching locked state
+#define CLOSE_COUNT 40
+#define CLOSE_ERROR 2
+
 /*****************************   Constants   *******************************/
 
 /*****************************   Functions   *******************************/
@@ -313,7 +317,7 @@ void controller_task()
 {
 	/********** Create variables ************/
 	// State
-	enum pid_state_type { CALIBRATE, CONTROL };
+	enum pid_state_type { CALIBRATE, CONTROL, LOCKED };
 	enum pid_state_type pid_state = CALIBRATE;
 
 	// Time passed since last sample
@@ -344,8 +348,12 @@ void controller_task()
 	INT8U tilt_duty = 0;
 
 	//Callibrate control
-	BOOLEAN pan_calibrated = FALSE;
+	BOOLEAN pan_calibrated  = FALSE;
 	BOOLEAN tilt_calibrated = FALSE;
+	
+	// Close to setp counter
+	INT8U pan_close_count  = 0;
+	INT8U tilt_close_count = 0;
 
 
 	/********** Initialize*******************/
@@ -357,8 +365,8 @@ void controller_task()
 	xQueueReceive( pid_pan_pos_queue,  &pan_pos,  portMAX_DELAY );
 
 	// Calculate first errors
-	pan_err       = pan_setp - pan_pos;
-	tilt_err      = tilt_setp - tilt_pos;
+	pan_err  = pan_setp  - pan_pos;
+	tilt_err = tilt_setp - tilt_pos;
 
 	// Start timing
 	timer0_start();
@@ -368,7 +376,7 @@ void controller_task()
 		// Wait for new position data (tilt must be read first)
 		xQueueReceive( pid_tilt_pos_queue, &tilt_pos, portMAX_DELAY );
 		xQueueReceive( pid_pan_pos_queue,  &pan_pos,  portMAX_DELAY );
-
+		
 		// Check and reset timer
 		dt = timer0_read() / 1600;	// Converted to ms/10
 		timer0_clear();
@@ -377,62 +385,76 @@ void controller_task()
 		pan_err  = pan_setp - pan_pos;
 		tilt_err = tilt_setp - tilt_pos;
 
-
-		pan_debug = pan_pos;
-		tilt_debug = tilt_pos;
-		pan_err2 = pan_err;
-		tilt_err2 = tilt_err;
-
 		switch ( pid_state ) {
 			case CALIBRATE:
-				if ( !pan_calibrated )
-					pan_duty  = 65;
-				if ( !tilt_calibrated )
+				// Check if near calibration set-point
+				if ( !pan_calibrated && ( pan_err > -10 && pan_err < 10 ) ) {
+					pan_duty = 50;
+					pan_calibrated = TRUE;
+				}
+				else if ( !pan_calibrated ) {
+					pan_duty = 65;
+				}
+			
+				if ( !tilt_calibrated && ( tilt_err > -10 && tilt_err < 10 ) ) {
+					tilt_duty = 50;
+					tilt_calibrated = TRUE;
+				}
+				else if ( !tilt_calibrated ) {
 					tilt_duty = 65;
+				}
+				
+				// Send duty cycles to queue (tilt must be send first)
+				xQueueSendToBack( pid_tilt_duty_queue, &tilt_duty, portMAX_DELAY );
+				xQueueSendToBack( pid_pan_duty_queue,  &pan_duty,  portMAX_DELAY );
+		
+				// Check if calibrated
+				if ( pan_calibrated && tilt_calibrated ) {
+					pid_state = CONTROL;
+				}
+				
 				break;
-			case CONTROL:
+			case CONTROL:			
 				// Check which direction is shortest and convert tilt_err accordingly
 				tilt_err = check_tilt_err_direction( tilt_err );
-				tilt_err2 = tilt_err;
 
 				// Calculate controller signal
-				pan_duty  = pan_calculate_duty( pan_err,  &pan_int_err,  pan_prev_err,  dt);
+				pan_duty  = pan_calculate_duty(  pan_err,  &pan_int_err,  pan_prev_err,  dt);
 				tilt_duty = tilt_calculate_duty( tilt_err, &tilt_int_err, tilt_prev_err, dt);
 
 				// Update prev_err
 				pan_prev_err  = pan_err;
 				tilt_prev_err = tilt_err;
-				break;
-			default:
-				break;
-		}
-
-		// Send duty cycles to queue (tilt must be send first)
-		xQueueSendToBack( pid_tilt_duty_queue, &tilt_duty, portMAX_DELAY );
-		xQueueSendToBack( pid_pan_duty_queue,  &pan_duty,  portMAX_DELAY );
-
-		switch ( pid_state ) {
-			case CALIBRATE:
-				// Check if near calibration set-point
-				if ( ( pan_err > -10 && pan_err < 10 ) && !pan_calibrated)
-				{
-					pan_duty = 50;
-					xQueueSendToBack( pid_tilt_duty_queue, &pan_duty, portMAX_DELAY );
-					pan_calibrated = TRUE;
+				
+				// Check if close to set-point
+				if ( pan_err <= CLOSE_ERROR && pan_err => -CLOSE_ERROR ) {
+					if ( ++pan_close_count ==  CLOSE_COUNT ) {
+						pan_close_count--;
+						pan_duty    = 50;
+						pan_int_err = 0;
+					}
 				}
-				if ( ( tilt_err > -10 && tilt_err < 10 ) && !tilt_calibrated)
-				{
-					tilt_duty = 50;
-					xQueueSendToBack( pid_tilt_duty_queue, &tilt_duty, portMAX_DELAY );
-					tilt_calibrated = TRUE;
+				else {
+					pan_close_count = 0;
 				}
-
-				if ( pan_duty == 50 && tilt_duty == 50 )
-				{
-					pid_state = CONTROL;
+				if ( tilt_err <= CLOSE_ERROR && tilt_err => -CLOSE_ERROR ) {
+					if ( ++tilt_close_count == CLOSE_COUNT ) {
+						tilt_close_count--;
+						tilt_duty    = 50;
+						tilt_int_err = 0;
+					}
 				}
-				break;
-			case CONTROL:
+				else {
+					tilt_close_count = 0;
+				}
+				if ( pan_close_count == CLOSE_COUNT && tilt_close_count == CLOSE_COUNT ) {
+					pid_state = LOCKED;
+				}
+					
+				// Send duty cycles to queue (tilt must be send first)
+				xQueueSendToBack( pid_tilt_duty_queue, &tilt_duty, portMAX_DELAY );
+				xQueueSendToBack( pid_pan_duty_queue,  &pan_duty,  portMAX_DELAY );
+				
 				// Check if new set-point has been received
 				if ( xQueueReceive( pid_tilt_setp_queue, &tilt_setp, 0 ) ) {
 					tilt_setp = deg10_to_encoder_counts( tilt_setp ); // Convert from 10th of degrees to encoder counts
@@ -442,6 +464,17 @@ void controller_task()
 					pan_setp = deg10_to_encoder_counts( pan_setp );  // Convert from 10th of degrees to encoder counts
 					//pan_setp = validate_pan_setp( pan_setp ); // Make sure pan_setp is within the boundary
 				}
+				break;
+			case LOCKED:
+				// Update prev_err
+				pan_prev_err  = pan_err;
+				tilt_prev_err = tilt_err;
+				
+				// Check if still close to set-point
+				if ( pan_err > CLOSE_ERROR || pan_err < -CLOSE_ERROR || tilt_err > CLOSE_ERROR || tilt_err < -CLOSE_ERROR )
+					pid_state = CONTROL;
+				else
+					
 				break;
 			default:
 				break;
