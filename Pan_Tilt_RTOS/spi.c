@@ -30,15 +30,16 @@
 xQueueHandle spi_rx_queue;
 xQueueHandle spi_tx_queue;
 
-INT8U first;
-INT8U second;
-INT8U third;
-BOOLEAN once = FALSE;
 extern xQueueHandle uart_tx_queue;
 /*****************************   Functions   *******************************/
 
-void writeSPI(int enable1, INT8U PAN, int enable2, INT8U TILT)
+INT32U writeSPI(int enable1, INT8U PAN, int enable2, INT8U TILT)
 {
+	INT8U first = 0;
+	INT8U second = 0;
+	INT8U third = 0;
+	INT32U rxData = 0;
+
 	// set slaveselect low
 	GPIO_PORTD_DATA_R &= ~(1<<1); //ss low => Start Transmission
 
@@ -70,22 +71,11 @@ void writeSPI(int enable1, INT8U PAN, int enable2, INT8U TILT)
 	GPIO_PORTD_DATA_R |= (1<<1); //end transmission
 
 	//save to queue
-	INT32U rxData = (first << 16) | (second << 8) | (third);
+	rxData = (first << 16) | (second << 8) | (third);
 
-	xQueueSendToBack(spi_rx_queue, &rxData, 10);
+	return rxData;
 
-	first = 0;
-	second = 0;
-	third = 0;
-	rxData = 0;
-
-	/*if (!once)
-				{
-					xQueueSendToBack(uart_tx_queue, &first, 20);
-					xQueueSendToBack(uart_tx_queue, &second, 20);
-					xQueueSendToBack(uart_tx_queue, &third, 20);
-					once = FALSE;
-				}*/
+	//xQueueSendToBack(spi_rx_queue, &rxData, 10);
 }
 
 /*void spi_task()

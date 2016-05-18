@@ -21,16 +21,16 @@
 
 /*****************************    Defines    *******************************/
 // Gain for each subsystem
-#define P 1.5559
-#define PAN_P_GAIN  P*1				// Corresponding to Kc
-#define PAN_I_GAIN	P*0				// Corresponding to Kc*Ki
-#define	PAN_D_GAIN	P*0.16			// Corresponding to Kc*Kd
-#define TILT_P_GAIN P*1				// Corresponding to Kc
-#define TILT_I_GAIN	P*0				// Corresponding to Kc*Ki
-#define	TILT_D_GAIN	P*0.16			// Corresponding to Kc*Kd
+#define P 1
+#define PAN_P_GAIN  P*1.2				// Corresponding to Kc
+#define PAN_I_GAIN	P*0					// Corresponding to Kc*Ki
+#define	PAN_D_GAIN	P*3					// Corresponding to Kc*Kd
+#define TILT_P_GAIN P*1.2				// Corresponding to Kc
+#define TILT_I_GAIN	P*0					// Corresponding to Kc*Ki
+#define	TILT_D_GAIN	P*3					// Corresponding to Kc*Kd
 
 // Limits for size of error integral
-#define MAX_INTEGRAL 10000000	// TODO: Check if this should be changed
+#define MAX_INTEGRAL 10000	// TODO: Check if this should be changed
 #define MIN_INTEGRAL -MAX_INTEGRAL
 
 // Maximum allowed outputs from the PID subsystems
@@ -55,7 +55,7 @@
 
 // Times the PID should run before reaching locked state
 #define CLOSE_COUNT 40
-#define CLOSE_ERROR 2
+#define CLOSE_ERROR 3
 
 /*****************************   Constants   *******************************/
 
@@ -345,8 +345,8 @@ void controller_task()
 	INT32S tilt_int_err = 0;
 
 	// Output from controller
-	INT8U pan_duty  = 0;
-	INT8U tilt_duty = 0;
+	INT8U pan_duty  = 50;
+	INT8U tilt_duty = 50;
 
 	//Callibrate control
 	BOOLEAN pan_calibrated  = FALSE;
@@ -362,12 +362,12 @@ void controller_task()
 	timer0_setup();
 
 	// Wait till data ready (tilt must be read first)
-	xQueueReceive( pid_tilt_pos_queue, &tilt_pos, portMAX_DELAY );
-	xQueueReceive( pid_pan_pos_queue,  &pan_pos,  portMAX_DELAY );
+	//xQueueReceive( pid_tilt_pos_queue, &tilt_pos, portMAX_DELAY );
+	//xQueueReceive( pid_pan_pos_queue,  &pan_pos,  portMAX_DELAY );
 
 	// Calculate first errors
-	pan_err  = pan_setp  - pan_pos;
-	tilt_err = tilt_setp - tilt_pos;
+	//pan_err  = pan_setp  - pan_pos;
+	//tilt_err = tilt_setp - tilt_pos;
 
 	// Start timing
 	timer0_start();
@@ -430,7 +430,7 @@ void controller_task()
 				// Check if close to set-point
 				if ( pan_err <= CLOSE_ERROR && pan_err >= -CLOSE_ERROR ) {
 					if ( ++pan_close_count >=  CLOSE_COUNT ) {
-						pan_close_count = CLOSE_COUNT;;
+						pan_close_count = CLOSE_COUNT;
 						pan_duty    = 50;
 						pan_int_err = 0;
 					}
@@ -484,10 +484,6 @@ void controller_task()
 					pan_setp = deg10_to_encoder_counts( pan_setp );  // Convert from 10th of degrees to encoder counts
 					//pan_setp = validate_pan_setp( pan_setp ); // Make sure pan_setp is within the boundary
 				}
-
-				//debug
-				INT8U debug = 'D';
-				xQueueSendToBack(uart_tx_queue, &debug, 10);
 					
 				break;
 			default:
