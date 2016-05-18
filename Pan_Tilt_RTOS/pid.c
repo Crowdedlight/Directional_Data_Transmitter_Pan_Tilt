@@ -21,9 +21,12 @@
 
 /*****************************    Defines    *******************************/
 // Gain for each subsystem
-#define P_GAIN  0.1			// Corresponding to Kc
-#define I_GAIN	0.00005	// Corresponding to Kc*Ki
-#define	D_GAIN	P_GAIN*100	// Corresponding to Kc*Kd
+#define PAN_P_GAIN  0.1			// Corresponding to Kc
+#define PAN_I_GAIN	0.00005		// Corresponding to Kc*Ki
+#define	PAN_D_GAIN	P_GAIN*100	// Corresponding to Kc*Kd
+#define TILT_P_GAIN  0.1		// Corresponding to Kc
+#define TILT_I_GAIN	0.00005		// Corresponding to Kc*Ki
+#define	TILT_D_GAIN	P_GAIN*100	// Corresponding to Kc*Kd
 
 // Limits for size of error integral
 #define MAX_INTEGRAL 100000	// TODO: Check if this should be changed
@@ -44,19 +47,21 @@
 #define MIN_TILT_SETP 0
 
 // Zones in which the PWM may operate
-#define DEADZONE   4
-#define DUTY_RANGE 75 - (50 + DEADZONE) // Range of duty cycle in which the system function
+#define PAN_DEADZONE   8
+#define PAN DUTY_RANGE 97 - (50 + PAN_DEADZONE) // Range of duty cycle in which the system function
+#define PAN_DEADZONE   4
+#define PAN DUTY_RANGE 97 - (50 + TILT_DEADZONE) // Range of duty cycle in which the system function
 
 /*****************************   Constants   *******************************/
 
 /*****************************   Functions   *******************************/
-INT16S pid_p_part( INT16S err )
+INT16S pan_p_part( INT16S err )
 /*****************************************************************************
 *   Function : See module specification (.h-file).
 *****************************************************************************/
 {
 	// Calculate output
-	INT32S output = err * P_GAIN;
+	INT32S output = err * PAN_P_GAIN;
 
 	if ( output > MAX_P_OUTPUT )
 		return MAX_P_OUTPUT;
@@ -66,7 +71,23 @@ INT16S pid_p_part( INT16S err )
 		return output;
 }
 
-INT16S pid_i_part( INT16S err, INT32S * int_err, INT16U dt )
+INT16S tilt_p_part( INT16S err )
+/*****************************************************************************
+*   Function : See module specification (.h-file).
+*****************************************************************************/
+{
+	// Calculate output
+	INT32S output = err * TILT_P_GAIN;
+
+	if ( output > MAX_P_OUTPUT )
+		return MAX_P_OUTPUT;
+	else if ( output < MIN_P_OUTPUT )
+		return MIN_P_OUTPUT;
+	else
+		return output;
+}
+
+INT16S pan_i_part( INT16S err, INT32S * int_err, INT16U dt )
 /*****************************************************************************
 *   Function : See module specification (.h-file).
 *****************************************************************************/
@@ -81,7 +102,7 @@ INT16S pid_i_part( INT16S err, INT32S * int_err, INT16U dt )
 		(*int_err) = MIN_INTEGRAL;
 
 	// Calculate output
-	INT32S output = (*int_err) * I_GAIN;
+	INT32S output = (*int_err) * PAN_I_GAIN;
 
 	if ( output > MAX_I_OUTPUT )
 		return MAX_I_OUTPUT;
@@ -91,7 +112,32 @@ INT16S pid_i_part( INT16S err, INT32S * int_err, INT16U dt )
 		return output;
 }
 
-INT16S pid_d_part( INT16S err, INT16S prev_err, INT16U dt )
+INT16S tilt_i_part( INT16S err, INT32S * int_err, INT16U dt )
+/*****************************************************************************
+*   Function : See module specification (.h-file).
+*****************************************************************************/
+{
+	// Calculate error integral
+	(*int_err) += err * dt; // OBS. dt is in units of ms/10
+
+	// Check if maxed out
+	if ( (*int_err) > MAX_INTEGRAL )
+		(*int_err) = MAX_INTEGRAL;
+	else if ( (*int_err) < MIN_INTEGRAL )
+		(*int_err) = MIN_INTEGRAL;
+
+	// Calculate output
+	INT32S output = (*int_err) * TILT_I_GAIN;
+
+	if ( output > MAX_I_OUTPUT )
+		return MAX_I_OUTPUT;
+	else if ( output < MIN_I_OUTPUT )
+		return MIN_I_OUTPUT;
+	else
+		return output;
+}
+
+INT16S pan_d_part( INT16S err, INT16S prev_err, INT16U dt )
 /*****************************************************************************
 *   Function : See module specification (.h-file).
 *****************************************************************************/
@@ -100,7 +146,7 @@ INT16S pid_d_part( INT16S err, INT16S prev_err, INT16U dt )
 	INT32S err_der = ( ( err - prev_err ) / dt ) * 10000; // OBS. dt is in units of ms/10. Multiply by 10000 to get err_der n counts/second
 
 	// Calculate output
-	INT32S output = err_der * D_GAIN;
+	INT32S output = err_der * PAN_D_GAIN;
 
 	if ( output > MAX_D_OUTPUT )
 		return MAX_D_OUTPUT;
@@ -110,22 +156,56 @@ INT16S pid_d_part( INT16S err, INT16S prev_err, INT16U dt )
 		return output;
 }
 
-INT8U pid_calculate_duty ( INT16S err, INT16S * int_err, INT16S prev_err, INT16U dt )
+INT16S tilt_d_part( INT16S err, INT16S prev_err, INT16U dt )
+/*****************************************************************************
+*   Function : See module specification (.h-file).
+*****************************************************************************/
+{
+	// Calculate error derivative
+	INT32S err_der = ( ( err - prev_err ) / dt ) * 10000; // OBS. dt is in units of ms/10. Multiply by 10000 to get err_der n counts/second
+
+	// Calculate output
+	INT32S output = err_der * TILT_D_GAIN;
+
+	if ( output > MAX_D_OUTPUT )
+		return MAX_D_OUTPUT;
+	else if ( output < MIN_D_OUTPUT )
+		return MIN_D_OUTPUT;
+	else
+		return output;
+}
+
+INT8U pan_calculate_duty ( INT16S err, INT16S * int_err, INT16S prev_err, INT16U dt )
 /*****************************************************************************
 *   Function : See module specification (.h-file).
 *****************************************************************************/
 {
 	INT16S output = 0;
 
-	output += pid_p_part( err );
-	output += pid_i_part( err, int_err,  dt );
-	output += pid_d_part( err, prev_err, dt );
-	output  = convert_to_duty( output );
+	output += pan_p_part( err );
+	output += pan_i_part( err, int_err,  dt );
+	output += pan_d_part( err, prev_err, dt );
+	output  = pan_convert_to_duty( output );
 
 	return output;
 }
 
-INT8U convert_to_duty( INT16S pid_out )
+INT8U tilt_calculate_duty ( INT16S err, INT16S * int_err, INT16S prev_err, INT16U dt )
+/*****************************************************************************
+*   Function : See module specification (.h-file).
+*****************************************************************************/
+{
+	INT16S output = 0;
+
+	output += tilt_p_part( err );
+	output += tilt_i_part( err, int_err,  dt );
+	output += tilt_d_part( err, prev_err, dt );
+	output  = tilt_convert_to_duty( output );
+
+	return output;
+}
+
+INT8U pan_convert_to_duty( INT16S pid_out )
 /*****************************************************************************
 *   Function : See module specification (.h-file).
 *****************************************************************************/
@@ -137,13 +217,39 @@ INT8U convert_to_duty( INT16S pid_out )
 		pid_out = -100;
 
 	// Convert to scale of duty cycle
-	INT8S duty = (pid_out * DUTY_RANGE) / 100;
+	INT8S duty = (pid_out * PAN_DUTY_RANGE) / 100;
 
 	// Shift out of motor's deadzone
 	if ( duty > 0 )
-		duty += DEADZONE;
+		duty += PAN_DEADZONE;
 	else if ( duty < 0 )
-		duty -= DEADZONE;
+		duty -= PAN_DEADZONE;
+
+	// Move 0-reference to 50
+		duty += 50;
+
+	return duty;
+}
+
+INT8U tilt_convert_to_duty( INT16S pid_out )
+/*****************************************************************************
+*   Function : See module specification (.h-file).
+*****************************************************************************/
+{
+	// Check if controller is maxed out
+	if ( pid_out > 100 )
+		pid_out = 100;
+	else if ( pid_out < -100 )
+		pid_out = -100;
+
+	// Convert to scale of duty cycle
+	INT8S duty = (pid_out * TILT_DUTY_RANGE) / 100;
+
+	// Shift out of motor's deadzone
+	if ( duty > 0 )
+		duty += TILT_DEADZONE;
+	else if ( duty < 0 )
+		duty -= TILT_DEADZONE;
 
 	// Move 0-reference to 50
 		duty += 50;
@@ -279,9 +385,9 @@ void controller_task()
 
 		switch ( pid_state ) {
 			case CALIBRATE:
-				if (!pan_calibrated)
-					pan_duty  = 60;
-				if (!tilt_calibrated)
+				if ( !pan_calibrated )
+					pan_duty  = 65;
+				if ( !tilt_calibrated )
 					tilt_duty = 65;
 				break;
 			case CONTROL:
@@ -290,8 +396,8 @@ void controller_task()
 				tilt_err2 = tilt_err;
 
 				// Calculate controller signal
-				pan_duty  = pid_calculate_duty( pan_err,  &pan_int_err,  pan_prev_err,  dt);
-				tilt_duty = pid_calculate_duty( tilt_err, &tilt_int_err, tilt_prev_err, dt);
+				pan_duty  = pan_calculate_duty( pan_err,  &pan_int_err,  pan_prev_err,  dt);
+				tilt_duty = tilt_calculate_duty( tilt_err, &tilt_int_err, tilt_prev_err, dt);
 
 				// Update prev_err
 				pan_prev_err  = pan_err;
