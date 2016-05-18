@@ -471,10 +471,6 @@ void controller_task()
 				pan_prev_err  = pan_err;
 				tilt_prev_err = tilt_err;
 				
-				// Check if still close to set-point
-				if ( pan_err > CLOSE_ERROR || pan_err < -CLOSE_ERROR || tilt_err > CLOSE_ERROR || tilt_err < -CLOSE_ERROR )
-					pid_state = CONTROL;
-
 				// Check if new set-point has been received
 				if ( xQueueReceive( pid_tilt_setp_queue, &tilt_setp, 0 ) ) {
 					tilt_setp = deg10_to_encoder_counts( tilt_setp ); // Convert from 10th of degrees to encoder counts
@@ -484,6 +480,12 @@ void controller_task()
 					pan_setp = deg10_to_encoder_counts( pan_setp );  // Convert from 10th of degrees to encoder counts
 					//pan_setp = validate_pan_setp( pan_setp ); // Make sure pan_setp is within the boundary
 				}
+				
+				// Check if still close to set-point
+				if ( pan_err > CLOSE_ERROR || pan_err < -CLOSE_ERROR || tilt_err > CLOSE_ERROR || tilt_err < -CLOSE_ERROR )
+					pid_state = CONTROL;
+
+				
 
 				//debug
 				INT8U debug = 'D';
