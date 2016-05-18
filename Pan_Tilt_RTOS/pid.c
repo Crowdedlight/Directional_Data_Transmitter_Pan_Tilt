@@ -21,15 +21,16 @@
 
 /*****************************    Defines    *******************************/
 // Gain for each subsystem
-#define PAN_P_GAIN  0.1			// Corresponding to Kc
-#define PAN_I_GAIN	0.00005		// Corresponding to Kc*Ki
-#define	PAN_D_GAIN	P_GAIN*100	// Corresponding to Kc*Kd
-#define TILT_P_GAIN  0.1		// Corresponding to Kc
-#define TILT_I_GAIN	0.00005		// Corresponding to Kc*Ki
-#define	TILT_D_GAIN	P_GAIN*100	// Corresponding to Kc*Kd
+#define P 1.5559*1.5
+#define PAN_P_GAIN  P*1				// Corresponding to Kc
+#define PAN_I_GAIN	P*0				// Corresponding to Kc*Ki
+#define	PAN_D_GAIN	P*0.16			// Corresponding to Kc*Kd
+#define TILT_P_GAIN P*1				// Corresponding to Kc
+#define TILT_I_GAIN	P*0				// Corresponding to Kc*Ki
+#define	TILT_D_GAIN	P*0.16			// Corresponding to Kc*Kd
 
 // Limits for size of error integral
-#define MAX_INTEGRAL 100000	// TODO: Check if this should be changed
+#define MAX_INTEGRAL 10000000	// TODO: Check if this should be changed
 #define MIN_INTEGRAL -MAX_INTEGRAL
 
 // Maximum allowed outputs from the PID subsystems
@@ -48,9 +49,9 @@
 
 // Zones in which the PWM may operate
 #define PAN_DEADZONE   8
-#define PAN DUTY_RANGE 97 - (50 + PAN_DEADZONE) // Range of duty cycle in which the system function
-#define PAN_DEADZONE   4
-#define PAN DUTY_RANGE 97 - (50 + TILT_DEADZONE) // Range of duty cycle in which the system function
+#define PAN_DUTY_RANGE 97 - (50 + PAN_DEADZONE) // Range of duty cycle in which the system function
+#define TILT_DEADZONE   10
+#define TILT_DUTY_RANGE 97 - (50 + TILT_DEADZONE) // Range of duty cycle in which the system function
 
 /*****************************   Constants   *******************************/
 

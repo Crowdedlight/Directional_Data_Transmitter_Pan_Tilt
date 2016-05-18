@@ -85,7 +85,8 @@ INT8U pid_calculate_duty ( INT16S err, INT16S * int_err, INT16S prev_err, INT16U
 *   Function : Calculates the pid output
 ******************************************************************************/
 
-INT8U convert_to_duty( INT16S pid_out );
+INT8U pan_convert_to_duty( INT16S pid_out );
+INT8U tilt_convert_to_duty( INT16S pid_out );
 /*****************************************************************************
 *   Input    : Positive/negative percentage of maximum output
 *   Output   : Output in duty cycle from 0 - 100
