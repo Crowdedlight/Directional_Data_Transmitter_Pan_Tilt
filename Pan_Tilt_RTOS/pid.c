@@ -21,7 +21,7 @@
 
 /*****************************    Defines    *******************************/
 // Gain for each subsystem
-#define P 1.5559*1.5
+#define P 1.5559
 #define PAN_P_GAIN  P*1				// Corresponding to Kc
 #define PAN_I_GAIN	P*0				// Corresponding to Kc*Ki
 #define	PAN_D_GAIN	P*0.16			// Corresponding to Kc*Kd
@@ -428,9 +428,9 @@ void controller_task()
 				tilt_prev_err = tilt_err;
 				
 				// Check if close to set-point
-				if ( pan_err <= CLOSE_ERROR && pan_err => -CLOSE_ERROR ) {
-					if ( ++pan_close_count ==  CLOSE_COUNT ) {
-						pan_close_count--;
+				if ( pan_err <= CLOSE_ERROR && pan_err >= -CLOSE_ERROR ) {
+					if ( ++pan_close_count >=  CLOSE_COUNT ) {
+						pan_close_count = CLOSE_COUNT;;
 						pan_duty    = 50;
 						pan_int_err = 0;
 					}
@@ -438,9 +438,9 @@ void controller_task()
 				else {
 					pan_close_count = 0;
 				}
-				if ( tilt_err <= CLOSE_ERROR && tilt_err => -CLOSE_ERROR ) {
-					if ( ++tilt_close_count == CLOSE_COUNT ) {
-						tilt_close_count--;
+				if ( tilt_err <= CLOSE_ERROR && tilt_err >= -CLOSE_ERROR ) {
+					if ( ++tilt_close_count >= CLOSE_COUNT ) {
+						tilt_close_count = CLOSE_COUNT;
 						tilt_duty    = 50;
 						tilt_int_err = 0;
 					}
@@ -474,7 +474,20 @@ void controller_task()
 				// Check if still close to set-point
 				if ( pan_err > CLOSE_ERROR || pan_err < -CLOSE_ERROR || tilt_err > CLOSE_ERROR || tilt_err < -CLOSE_ERROR )
 					pid_state = CONTROL;
-				else
+
+				// Check if new set-point has been received
+				if ( xQueueReceive( pid_tilt_setp_queue, &tilt_setp, 0 ) ) {
+					tilt_setp = deg10_to_encoder_counts( tilt_setp ); // Convert from 10th of degrees to encoder counts
+					//tilt_setp = validate_tilt_setp( tilt_setp ); // Make sure tilt_setp is within the boundary
+				}
+				if ( xQueueReceive( pid_pan_setp_queue,  &pan_setp,  0 ) ) {
+					pan_setp = deg10_to_encoder_counts( pan_setp );  // Convert from 10th of degrees to encoder counts
+					//pan_setp = validate_pan_setp( pan_setp ); // Make sure pan_setp is within the boundary
+				}
+
+				//debug
+				INT8U debug = 'D';
+				xQueueSendToBack(uart_tx_queue, &debug, 10);
 					
 				break;
 			default:
