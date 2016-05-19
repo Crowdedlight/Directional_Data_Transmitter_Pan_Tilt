@@ -21,13 +21,15 @@
 
 /*****************************    Defines    *******************************/
 // Gain for each subsystem
-#define P (1/5.4)*3
-#define PAN_P_GAIN  (P*3.5)	//0.005				// Corresponding to Kc
-#define PAN_I_GAIN	(P*0*0.1/10000)		//0.000005					// Corresponding to Kc*Ki
-#define	PAN_D_GAIN	(P*0*0.166)	//0.08/10				// Corresponding to Kc*Kd
-#define TILT_P_GAIN (P*1)		//0.005				// Corresponding to Kc
-#define TILT_I_GAIN	(P*0*0.1/10000)		//0.000005					// Corresponding to Kc*Ki
-#define	TILT_D_GAIN	(P*0*0.166)	//0.08/10				// Corresponding to Kc*Kd
+#define K           (1/5.4)*3
+#define PAN_P_GAIN  (K*3.5)	//0.005				// Corresponding to Kc
+#define PAN_P_LARGE_GAIN (PAN_P_GAIN*5)
+#define PAN_I_GAIN	(K*0*0.1/10000)		//0.000005					// Corresponding to Kc*Ki
+#define	PAN_D_GAIN	(K*0*0.166)	//0.08/10				// Corresponding to Kc*Kd
+#define TILT_P_GAIN (K*1)		//0.005				// Corresponding to Kc
+#define TILT_P_LARGE_GAIN (TILT_P_GAIN*5)
+#define TILT_I_GAIN	(K*0*0.1/10000)		//0.000005					// Corresponding to Kc*Ki
+#define	TILT_D_GAIN	(K*0*0.166)	//0.08/10				// Corresponding to Kc*Kd
 
 // Limits for size of error integral
 #define MAX_INTEGRAL 100000	// TODO: Check if this should be changed
@@ -66,7 +68,12 @@ INT16S pan_p_part( INT16S err )
 *****************************************************************************/
 {
 	// Calculate output
-	INT32S output = err * PAN_P_GAIN;
+	INT32S output;
+	
+	if ( err < 20 && err > -20 )
+		output = err * PAN_P_LARGE_GAIN;
+	else
+		output = err * PAN_P_GAIN;
 
 	if ( output > MAX_P_OUTPUT )
 		return MAX_P_OUTPUT;
@@ -83,6 +90,11 @@ INT16S tilt_p_part( INT16S err )
 {
 	// Calculate output
 	INT32S output = err * TILT_P_GAIN;
+	
+	if ( err < 20 && err > -20 )
+		output = err * TILT_P_LARGE_GAIN;
+	else
+		output = err * TILT_P_GAIN;
 
 	if ( output > MAX_P_OUTPUT )
 		return MAX_P_OUTPUT;
