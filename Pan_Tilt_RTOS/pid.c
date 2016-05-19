@@ -21,7 +21,7 @@
 
 /*****************************    Defines    *******************************/
 // Gain for each subsystem
-#define K           (1/5.4)*3
+#define K           (1/0.54)
 #define PAN_P_GAIN  (K*3.5)	//0.005				// Corresponding to Kc
 #define PAN_P_LARGE_GAIN (PAN_P_GAIN*5)
 #define PAN_I_GAIN	(K*0*0.1/10000)		//0.000005					// Corresponding to Kc*Ki
@@ -50,10 +50,10 @@
 #define MIN_TILT_SETP 0
 
 // Zones in which the PWM may operate
-#define PAN_DEADZONE   10
-#define PAN_DUTY_RANGE (97 - (50 + PAN_DEADZONE)) // Range of duty cycle in which the system function
-#define TILT_DEADZONE   10
-#define TILT_DUTY_RANGE (97 - (50 + TILT_DEADZONE)) // Range of duty cycle in which the system function
+#define PAN_DEADZONE   100
+#define PAN_DUTY_RANGE (970 - (50 + PAN_DEADZONE)) // Range of duty cycle in which the system function
+#define TILT_DEADZONE   100
+#define TILT_DUTY_RANGE (970 - (50 + TILT_DEADZONE)) // Range of duty cycle in which the system function
 
 // Times the PID should run before reaching locked state
 #define CLOSE_COUNT 40
@@ -70,9 +70,9 @@ INT16S pan_p_part( INT16S err )
 	// Calculate output
 	INT32S output;
 	
-	if ( err < 20 && err > -20 )
-		output = err * PAN_P_LARGE_GAIN;
-	else
+	//if ( err < 20 && err > -20 )
+	//	output = err * PAN_P_LARGE_GAIN;
+	//else
 		output = err * PAN_P_GAIN;
 
 	if ( output > MAX_P_OUTPUT )
@@ -91,9 +91,9 @@ INT16S tilt_p_part( INT16S err )
 	// Calculate output
 	INT32S output = err * TILT_P_GAIN;
 	
-	if ( err < 20 && err > -20 )
-		output = err * TILT_P_LARGE_GAIN;
-	else
+	//if ( err < 20 && err > -20 )
+	//	output = err * TILT_P_LARGE_GAIN;
+	//else
 		output = err * TILT_P_GAIN;
 
 	if ( output > MAX_P_OUTPUT )
@@ -192,12 +192,12 @@ INT16S tilt_d_part( INT16S err, INT16S prev_err, INT16U dt )
 		return output;
 }
 
-INT8U pan_calculate_duty ( INT16S err, INT16S * int_err, INT16S prev_err, INT16U dt )
+INT16U pan_calculate_duty ( INT16S err, INT16S * int_err, INT16S prev_err, INT16U dt )
 /*****************************************************************************
 *   Function : See module specification (.h-file).
 *****************************************************************************/
 {
-	INT16S output = 0;
+	INT32S output = 0;
 
 	output += pan_p_part( err );
 	output += pan_i_part( err, int_err,  dt );
@@ -207,12 +207,12 @@ INT8U pan_calculate_duty ( INT16S err, INT16S * int_err, INT16S prev_err, INT16U
 	return output;
 }
 
-INT8U tilt_calculate_duty ( INT16S err, INT16S * int_err, INT16S prev_err, INT16U dt )
+INT16U tilt_calculate_duty ( INT16S err, INT16S * int_err, INT16S prev_err, INT16U dt )
 /*****************************************************************************
 *   Function : See module specification (.h-file).
 *****************************************************************************/
 {
-	INT16S output = 0;
+	INT32S output = 0;
 
 	output += tilt_p_part( err );
 	output += tilt_i_part( err, int_err,  dt );
@@ -222,19 +222,19 @@ INT8U tilt_calculate_duty ( INT16S err, INT16S * int_err, INT16S prev_err, INT16
 	return output;
 }
 
-INT8U pan_convert_to_duty( INT16S pid_out )
+INT16U pan_convert_to_duty( INT32S pid_out )
 /*****************************************************************************
 *   Function : See module specification (.h-file).
 *****************************************************************************/
 {
 	// Check if controller is maxed out
-	if ( pid_out > 100 )
-		pid_out = 100;
-	else if ( pid_out < -100 )
-		pid_out = -100;
+	if ( pid_out > 1000 )
+		pid_out = 1000;
+	else if ( pid_out < -1000 )
+		pid_out = -1000;
 
 	// Convert to scale of duty cycle
-	INT32S duty = (pid_out * PAN_DUTY_RANGE) / 100;
+	INT32S duty = (pid_out * PAN_DUTY_RANGE) / 1000;
 
 	// Shift out of motor's deadzone
 	if ( duty > 0 )
@@ -243,25 +243,24 @@ INT8U pan_convert_to_duty( INT16S pid_out )
 		duty -= PAN_DEADZONE;
 
 	// Move 0-reference to 50
-		duty += 50;
+		duty += 500;
 
 	return duty;
 }
 
-INT8U tilt_convert_to_duty( INT16S pid_out )
+INT8U tilt_convert_to_duty( INT32S pid_out )
 /*****************************************************************************
 *   Function : See module specification (.h-file).
 *****************************************************************************/
 {
 	// Check if controller is maxed out
-	if ( pid_out > 100 )
-		pid_out = 100;
-	else if ( pid_out < -100 )
-		pid_out = -100;
+	if ( pid_out > 1000 )
+		pid_out = 1000;
+	else if ( pid_out < -1000 )
+		pid_out = -1000;
 
 	// Convert to scale of duty cycle
-	INT32S duty = (pid_out * TILT_DUTY_RANGE);
-	duty = duty/100;
+	INT32S duty = (pid_out * TILT_DUTY_RANGE) / 1000;
 
 	INT32S debug5 = duty;
 	INT32S debug7 = pid_out;
@@ -273,7 +272,7 @@ INT8U tilt_convert_to_duty( INT16S pid_out )
 		duty -= TILT_DEADZONE;
 
 	// Move 0-reference to 50
-		duty += 50;
+		duty += 500;
 
 	return duty;
 }
