@@ -22,12 +22,12 @@
 /*****************************    Defines    *******************************/
 // Gain for each subsystem
 #define P (1/5.4)*3
-#define PAN_P_GAIN  (P*3.5)	//0.005				// Corresponding to Kc
-#define PAN_I_GAIN	(P*0*0.1/10000)		//0.000005					// Corresponding to Kc*Ki
-#define	PAN_D_GAIN	(P*0*0.166)	//0.08/10				// Corresponding to Kc*Kd
-#define TILT_P_GAIN (P*1)		//0.005				// Corresponding to Kc
-#define TILT_I_GAIN	(P*0*0.1/10000)		//0.000005					// Corresponding to Kc*Ki
-#define	TILT_D_GAIN	(P*0*0.166)	//0.08/10				// Corresponding to Kc*Kd
+#define PAN_P_GAIN  (P*3.5)				//0.005					// Corresponding to Kc
+#define PAN_I_GAIN	(P*0.1/10000)		//0.000005				// Corresponding to Kc*Ki
+#define	PAN_D_GAIN	(P*0.166)			//0.08/10				// Corresponding to Kc*Kd
+#define TILT_P_GAIN (P*1)				//0.005					// Corresponding to Kc
+#define TILT_I_GAIN	(P*0.1/10000)		//0.000005				// Corresponding to Kc*Ki
+#define	TILT_D_GAIN	(P*0.166)			//0.08/10				// Corresponding to Kc*Kd
 
 // Limits for size of error integral
 #define MAX_INTEGRAL 100000	// TODO: Check if this should be changed
@@ -482,7 +482,7 @@ void controller_task()
 				
 				//Debug
 				INT8U lockuart = 'L';
-				xQueueSendToBack(uart_tx_queue, &lockuart, 0);
+				//xQueueSendToBack(uart_tx_queue, &lockuart, 0);
 
 				// Check if still close to set-point
 				if ( pan_err > CLOSE_ERROR || pan_err < -CLOSE_ERROR || tilt_err > CLOSE_ERROR || tilt_err < -CLOSE_ERROR )
