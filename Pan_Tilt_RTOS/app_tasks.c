@@ -41,8 +41,6 @@ void communication_task()
 	INT32U spiFeedback;
 	INT16U spiTemp;
 
-	BOOLEAN once = FALSE;
-
 	/***** superloop *****/
 	while(1)
 	{

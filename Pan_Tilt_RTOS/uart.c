@@ -48,13 +48,13 @@ extern void uart0_ISR_Handler()
 *   Function :
 ******************************************************************************/
 {
+	disable_uart0_int();
 	INT8U ch = UART0_DR_R;
 
-	disable_uart0_int();
 	xQueueSendFromISR(uart_rx_queue, &ch, NULL);
-	enable_uart0_int();
 
 	UART0_ICR_R |= UART_ICR_RXIC;
+	enable_uart0_int();
 
 }
 

@@ -21,16 +21,16 @@
 
 /*****************************    Defines    *******************************/
 // Gain for each subsystem
-#define P 1
-#define PAN_P_GAIN  P*1.2				// Corresponding to Kc
-#define PAN_I_GAIN	P*0					// Corresponding to Kc*Ki
-#define	PAN_D_GAIN	P*3					// Corresponding to Kc*Kd
-#define TILT_P_GAIN P*1.2				// Corresponding to Kc
-#define TILT_I_GAIN	P*0					// Corresponding to Kc*Ki
-#define	TILT_D_GAIN	P*3					// Corresponding to Kc*Kd
+#define P (1/5.4)*3
+#define PAN_P_GAIN  (P*3.5)	//0.005				// Corresponding to Kc
+#define PAN_I_GAIN	(P*0*0.1/10000)		//0.000005					// Corresponding to Kc*Ki
+#define	PAN_D_GAIN	(P*0*0.166)	//0.08/10				// Corresponding to Kc*Kd
+#define TILT_P_GAIN (P*1)		//0.005				// Corresponding to Kc
+#define TILT_I_GAIN	(P*0*0.1/10000)		//0.000005					// Corresponding to Kc*Ki
+#define	TILT_D_GAIN	(P*0*0.166)	//0.08/10				// Corresponding to Kc*Kd
 
 // Limits for size of error integral
-#define MAX_INTEGRAL 10000	// TODO: Check if this should be changed
+#define MAX_INTEGRAL 100000	// TODO: Check if this should be changed
 #define MIN_INTEGRAL -MAX_INTEGRAL
 
 // Maximum allowed outputs from the PID subsystems
@@ -48,14 +48,14 @@
 #define MIN_TILT_SETP 0
 
 // Zones in which the PWM may operate
-#define PAN_DEADZONE   8
-#define PAN_DUTY_RANGE 97 - (50 + PAN_DEADZONE) // Range of duty cycle in which the system function
+#define PAN_DEADZONE   10
+#define PAN_DUTY_RANGE (97 - (50 + PAN_DEADZONE)) // Range of duty cycle in which the system function
 #define TILT_DEADZONE   10
-#define TILT_DUTY_RANGE 97 - (50 + TILT_DEADZONE) // Range of duty cycle in which the system function
+#define TILT_DUTY_RANGE (97 - (50 + TILT_DEADZONE)) // Range of duty cycle in which the system function
 
 // Times the PID should run before reaching locked state
 #define CLOSE_COUNT 40
-#define CLOSE_ERROR 3
+#define CLOSE_ERROR 2
 
 /*****************************   Constants   *******************************/
 
@@ -222,7 +222,7 @@ INT8U pan_convert_to_duty( INT16S pid_out )
 		pid_out = -100;
 
 	// Convert to scale of duty cycle
-	INT8S duty = (pid_out * PAN_DUTY_RANGE) / 100;
+	INT32S duty = (pid_out * PAN_DUTY_RANGE) / 100;
 
 	// Shift out of motor's deadzone
 	if ( duty > 0 )
@@ -248,7 +248,11 @@ INT8U tilt_convert_to_duty( INT16S pid_out )
 		pid_out = -100;
 
 	// Convert to scale of duty cycle
-	INT8S duty = (pid_out * TILT_DUTY_RANGE) / 100;
+	INT32S duty = (pid_out * TILT_DUTY_RANGE);
+	duty = duty/100;
+
+	INT32S debug5 = duty;
+	INT32S debug7 = pid_out;
 
 	// Shift out of motor's deadzone
 	if ( duty > 0 )
@@ -386,6 +390,9 @@ void controller_task()
 		pan_err  = pan_setp - pan_pos;
 		tilt_err = tilt_setp - tilt_pos;
 
+		tilt_debug = tilt_setp;
+		tilt_err2 = tilt_err;
+
 		switch ( pid_state ) {
 			case CALIBRATE:
 				// Check if near calibration set-point
@@ -456,6 +463,8 @@ void controller_task()
 				xQueueSendToBack( pid_tilt_duty_queue, &tilt_duty, portMAX_DELAY );
 				xQueueSendToBack( pid_pan_duty_queue,  &pan_duty,  portMAX_DELAY );
 				
+				INT16U debug9 = tilt_duty;
+
 				// Check if new set-point has been received
 				if ( xQueueReceive( pid_tilt_setp_queue, &tilt_setp, 0 ) ) {
 					tilt_setp = deg10_to_encoder_counts( tilt_setp ); // Convert from 10th of degrees to encoder counts
@@ -471,6 +480,10 @@ void controller_task()
 				pan_prev_err  = pan_err;
 				tilt_prev_err = tilt_err;
 				
+				//Debug
+				INT8U lockuart = 'L';
+				xQueueSendToBack(uart_tx_queue, &lockuart, 0);
+
 				// Check if still close to set-point
 				if ( pan_err > CLOSE_ERROR || pan_err < -CLOSE_ERROR || tilt_err > CLOSE_ERROR || tilt_err < -CLOSE_ERROR )
 					pid_state = CONTROL;
