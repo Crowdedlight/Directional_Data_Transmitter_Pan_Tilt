@@ -37,7 +37,7 @@
 /*****************************   Functions   *******************************/
 
 void spi_init();
-INT32U writeSPI(int enable1, INT8U motor1, int enable2, INT8U motor2);
+INT32U writeSPI(int enable1, INT16U motor1, int enable2, INT16U motor2);
 void spi_task();
 
 /*****************************************************************************

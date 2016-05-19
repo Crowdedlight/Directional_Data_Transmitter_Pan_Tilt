@@ -115,8 +115,8 @@ int main(void)
   pid_tilt_pos_queue  = xQueueCreate( 5, sizeof( INT16U ) );
   pid_pan_setp_queue  = xQueueCreate( 5, sizeof( INT16U ) );
   pid_tilt_setp_queue = xQueueCreate( 5, sizeof( INT16U ) );
-  pid_pan_duty_queue  = xQueueCreate( 5, sizeof( INT8U ) );
-  pid_tilt_duty_queue = xQueueCreate( 5, sizeof( INT8U ) );
+  pid_pan_duty_queue  = xQueueCreate( 5, sizeof( INT16U ) );
+  pid_tilt_duty_queue = xQueueCreate( 5, sizeof( INT16U ) );
 
   /********** Setup Semaphores **********/
 

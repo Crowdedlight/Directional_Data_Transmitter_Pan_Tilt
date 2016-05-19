@@ -34,10 +34,10 @@ void communication_task()
 *****************************************************************************/
 {
 	/***** Initialize *****/
-	INT8U last_pan_value = 50;
-	INT8U last_tilt_value = 50;
-	INT8U new_pan_value = 50;
-	INT8U new_tilt_value = 50;
+	INT16U last_pan_value = 500;
+	INT16U last_tilt_value = 500;
+	INT16U new_pan_value = 500;
+	INT16U new_tilt_value = 500;
 	INT32U spiFeedback;
 	INT16U spiTemp;
 
@@ -68,9 +68,10 @@ void communication_task()
 		spiTemp = ( spiFeedback & 0b111111111111000000000000) >> 12;
 		xQueueSendToBack(pid_pan_pos_queue, &spiTemp, portMAX_DELAY);
 
+
+
 		spiTemp = spiFeedback & 0b111111111111;
 		xQueueSendToBack(pid_tilt_pos_queue, &spiTemp, portMAX_DELAY);
-
 
 
 		//Now sleep in x times millisecs

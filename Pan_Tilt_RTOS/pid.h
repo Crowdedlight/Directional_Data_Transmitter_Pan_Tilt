@@ -78,15 +78,15 @@ INT16S pid_d_part( INT16S err, INT16S prev_err, INT16U dt );
 *   Function : Calculates the derivative part of the controller output
 ******************************************************************************/
 
-INT8U pid_calculate_duty ( INT16S err, INT16S * int_err, INT16S prev_err, INT16U dt );
+INT16U pid_calculate_duty ( INT16S err, INT16S * int_err, INT16S prev_err, INT16U dt );
 /*****************************************************************************
 *   Input    : Error signal, error integral, previous error signal, time passed since last sample
 *   Output   : Output signal as duty cycle
 *   Function : Calculates the pid output
 ******************************************************************************/
 
-INT8U pan_convert_to_duty( INT16S pid_out );
-INT8U tilt_convert_to_duty( INT16S pid_out );
+INT16U pan_convert_to_duty( INT32S pid_out );
+INT16U tilt_convert_to_duty( INT32S pid_out );
 /*****************************************************************************
 *   Input    : Positive/negative percentage of maximum output
 *   Output   : Output in duty cycle from 0 - 100

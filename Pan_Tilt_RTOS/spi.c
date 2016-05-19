@@ -33,7 +33,7 @@ xQueueHandle spi_tx_queue;
 extern xQueueHandle uart_tx_queue;
 /*****************************   Functions   *******************************/
 
-INT32U writeSPI(int enable1, INT8U PAN, int enable2, INT8U TILT)
+INT32U writeSPI(int enable1, INT16U PAN, int enable2, INT16U TILT)
 {
 	INT8U first = 0;
 	INT8U second = 0;
@@ -43,7 +43,7 @@ INT32U writeSPI(int enable1, INT8U PAN, int enable2, INT8U TILT)
 	// set slaveselect low
 	GPIO_PORTD_DATA_R &= ~(1<<1); //ss low => Start Transmission
 
-	SSI3_DR_R = (enable1 << 7) | (PAN << 0);
+	SSI3_DR_R = (enable1 << 7) | (0<<6) | ((PAN >> 4) & 0b111111 ) << 0;
 	while((SSI3_SR_R & (1<<0)) == 0);
 
 	//Get return data
@@ -51,7 +51,7 @@ INT32U writeSPI(int enable1, INT8U PAN, int enable2, INT8U TILT)
 	for(int i = 0; i <5; i++);
 	first = SSI3_DR_R;
 
-	SSI3_DR_R = (enable2 << 7) | (TILT << 0);
+	SSI3_DR_R = ((PAN & 0b1111)<<4) | (enable2 << 3) | (0<<2) | ((TILT >> 8) & 0b11)<<0;
 	while((SSI3_SR_R & (1<<0)) == 0);
 
 	//Get return data
@@ -59,7 +59,7 @@ INT32U writeSPI(int enable1, INT8U PAN, int enable2, INT8U TILT)
 	for(int i = 0; i <5; i++);
 	second = SSI3_DR_R;
 
-	SSI3_DR_R = 0; //Dummy send to recieve full data from FPGA
+	SSI3_DR_R = (TILT & 0b11111111);
 	while((SSI3_SR_R & (1<<0)) == 0);
 
 	//Get return data
