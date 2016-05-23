@@ -68,14 +68,9 @@ void communication_task()
 		spiTemp = ( spiFeedback & 0b111111111111000000000000) >> 12;
 		xQueueSendToBack(pid_pan_pos_queue, &spiTemp, portMAX_DELAY);
 
-		INT8U uartTemp = (spiTemp & 0b111100000000) >>8;
-		xQueueSendToBack(uart_tx_queue, &uartTemp, 0);
-		uartTemp = (spiTemp & 0b11111111);
-		xQueueSendToBack(uart_tx_queue, &uartTemp, 0);
 
 		spiTemp = spiFeedback & 0b111111111111;
 		xQueueSendToBack(pid_tilt_pos_queue, &spiTemp, portMAX_DELAY);
-
 
 		//Now sleep in x times millisecs
 		vTaskDelay((1000/RUNPERSEC) / portTICK_RATE_MS );
