@@ -24,7 +24,7 @@
 #define K (1/0.54)
 #define PAN_P_GAIN  		(K*6.3)				//0.005				// Corresponding to Kc
 #define PAN_I_GAIN			(K*0*0.1/10000)		//0.000005					// Corresponding to Kc*Ki
-#define	PAN_D_GAIN			(K*0.2)				//0.08/10				// Corresponding to Kc*Kd
+#define	PAN_D_GAIN			(K*1.26)				//0.08/10				// Corresponding to Kc*Kd
 #define TILT_P_GAIN 		(K*1)				//0.005				// Corresponding to Kc
 #define TILT_I_GAIN			(K*0*0.1/10000)		//0.000005					// Corresponding to Kc*Ki
 #define	TILT_D_GAIN			(K*0.166)			//0.08/10				// Corresponding to Kc*Kd

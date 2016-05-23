@@ -103,18 +103,18 @@ void messages_rx_task()
 					break;
 				}
 
-				state = RESPOND;
+				state = CLEAR;
 
 				break;
-				case RESPOND:
+				//case RESPOND:
 					//INT8U o = 'O';
 					//INT8U k = 'K';
 					//xQueueSendToBack(uart_tx_queue, &o, 0);
 					//xQueueSendToBack(uart_tx_queue, &k, 0);
-					state = CLEAR;
-					break;
+					//state = CLEAR;
+					//break;
 			default:
-				state = CLEAR;
+				//state = CLEAR;
 				break;
 		}
 	}
