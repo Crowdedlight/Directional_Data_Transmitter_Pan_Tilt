@@ -138,7 +138,7 @@ void spi_init()
 	SSI3_CC_R = 0x00;
 
 	// 4. Configure the clock prescaler divisor by writing the SSI_CPSR register
-	SSI3_CPSR_R |= 8; //Divisor 2
+	SSI3_CPSR_R |= 8; //Divisor 8 = 2 Mhz
 
 	// 5. Write the SSI_CR0 register with the following config
 	// : Serial clock rate (SCR)

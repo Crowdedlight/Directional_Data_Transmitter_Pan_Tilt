@@ -22,11 +22,11 @@
 /*****************************    Defines    *******************************/
 // Gain for each subsystem
 #define K (1/0.54)
-#define PAN_P_GAIN  		(K*3.5)				//0.005				// Corresponding to Kc
-#define PAN_I_GAIN			(K*0.1/10000)		//0.000005					// Corresponding to Kc*Ki
-#define	PAN_D_GAIN			(K*0.166)			//0.08/10				// Corresponding to Kc*Kd
+#define PAN_P_GAIN  		(K*6.3)				//0.005				// Corresponding to Kc
+#define PAN_I_GAIN			(K*0*0.1/10000)		//0.000005					// Corresponding to Kc*Ki
+#define	PAN_D_GAIN			(K*0.2)				//0.08/10				// Corresponding to Kc*Kd
 #define TILT_P_GAIN 		(K*1)				//0.005				// Corresponding to Kc
-#define TILT_I_GAIN			(K*0.1/10000)		//0.000005					// Corresponding to Kc*Ki
+#define TILT_I_GAIN			(K*0*0.1/10000)		//0.000005					// Corresponding to Kc*Ki
 #define	TILT_D_GAIN			(K*0.166)			//0.08/10				// Corresponding to Kc*Kd
 
 
@@ -472,8 +472,6 @@ void controller_task()
 				// Send duty cycles to queue (tilt must be send first)
 				xQueueSendToBack( pid_tilt_duty_queue, &tilt_duty, portMAX_DELAY );
 				xQueueSendToBack( pid_pan_duty_queue,  &pan_duty,  portMAX_DELAY );
-				
-				INT16U debug9 = tilt_duty;
 
 				// Check if new set-point has been received
 				if ( xQueueReceive( pid_tilt_setp_queue, &tilt_setp, 0 ) ) {
@@ -491,7 +489,7 @@ void controller_task()
 				tilt_prev_err = tilt_err;
 				
 				//Debug
-				INT8U lockuart = 'L';
+				//INT8U lockuart = 'L';
 				//xQueueSendToBack(uart_tx_queue, &lockuart, 0);
 
 				// Check if still close to set-point

@@ -107,10 +107,10 @@ void messages_rx_task()
 
 				break;
 				case RESPOND:
-					INT8U o = 'O';
-					INT8U k = 'K';
-					xQueueSendToBack(uart_tx_queue, &o, 0);
-					xQueueSendToBack(uart_tx_queue, &k, 0);
+					//INT8U o = 'O';
+					//INT8U k = 'K';
+					//xQueueSendToBack(uart_tx_queue, &o, 0);
+					//xQueueSendToBack(uart_tx_queue, &k, 0);
 					state = CLEAR;
 					break;
 			default:
