@@ -48,13 +48,13 @@ extern void uart0_ISR_Handler()
 *   Function :
 ******************************************************************************/
 {
+	disable_uart0_int();
 	INT8U ch = UART0_DR_R;
 
-	disable_uart0_int();
 	xQueueSendFromISR(uart_rx_queue, &ch, NULL);
-	enable_uart0_int();
 
 	UART0_ICR_R |= UART_ICR_RXIC;
+	enable_uart0_int();
 
 }
 
@@ -242,6 +242,9 @@ void uart0_init( INT32U baud_rate, INT8U databits, INT8U stopbits, INT8U parity 
   uart0_fifos_disable();
 
   UART0_CTL_R  |= (UART_CTL_UARTEN | UART_CTL_TXE );  // Enable UART
+
+  //Interrupt priority lower than freeRTOS
+  NVIC_PRI1_R |= 0x0000DF00; //13 => 0b1101 for prioerty for prio1 interrupt 5
 
   //Enable Interrupt uart0
   NVIC_EN0_R |= (1<<5); //Bit 5 on NVIC EN0 to enable interrupt

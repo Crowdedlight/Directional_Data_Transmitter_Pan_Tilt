@@ -30,19 +30,20 @@
 xQueueHandle spi_rx_queue;
 xQueueHandle spi_tx_queue;
 
-INT8U first;
-INT8U second;
-INT8U third;
-BOOLEAN once = FALSE;
 extern xQueueHandle uart_tx_queue;
 /*****************************   Functions   *******************************/
 
-void writeSPI(int enable1, INT8U PAN, int enable2, INT8U TILT)
+INT32U writeSPI(int enable1, INT16U PAN, int enable2, INT16U TILT)
 {
+	INT8U first = 0;
+	INT8U second = 0;
+	INT8U third = 0;
+	INT32U rxData = 0;
+
 	// set slaveselect low
 	GPIO_PORTD_DATA_R &= ~(1<<1); //ss low => Start Transmission
 
-	SSI3_DR_R = (enable1 << 7) | (PAN << 0);
+	SSI3_DR_R = (enable1 << 7) | (0<<6) | ((PAN >> 4) & 0b111111 ) << 0;
 	while((SSI3_SR_R & (1<<0)) == 0);
 
 	//Get return data
@@ -50,7 +51,7 @@ void writeSPI(int enable1, INT8U PAN, int enable2, INT8U TILT)
 	for(int i = 0; i <5; i++);
 	first = SSI3_DR_R;
 
-	SSI3_DR_R = (enable2 << 7) | (TILT << 0);
+	SSI3_DR_R = ((PAN & 0b1111)<<4) | (enable2 << 3) | (0<<2) | ((TILT >> 8) & 0b11)<<0;
 	while((SSI3_SR_R & (1<<0)) == 0);
 
 	//Get return data
@@ -58,7 +59,7 @@ void writeSPI(int enable1, INT8U PAN, int enable2, INT8U TILT)
 	for(int i = 0; i <5; i++);
 	second = SSI3_DR_R;
 
-	SSI3_DR_R = 0; //Dummy send to recieve full data from FPGA
+	SSI3_DR_R = (TILT & 0b11111111);
 	while((SSI3_SR_R & (1<<0)) == 0);
 
 	//Get return data
@@ -70,22 +71,11 @@ void writeSPI(int enable1, INT8U PAN, int enable2, INT8U TILT)
 	GPIO_PORTD_DATA_R |= (1<<1); //end transmission
 
 	//save to queue
-	INT32U rxData = (first << 16) | (second << 8) | (third);
+	rxData = (first << 16) | (second << 8) | (third);
 
-	xQueueSendToBack(spi_rx_queue, &rxData, 10);
+	return rxData;
 
-	first = 0;
-	second = 0;
-	third = 0;
-	rxData = 0;
-
-	/*if (!once)
-				{
-					xQueueSendToBack(uart_tx_queue, &first, 20);
-					xQueueSendToBack(uart_tx_queue, &second, 20);
-					xQueueSendToBack(uart_tx_queue, &third, 20);
-					once = FALSE;
-				}*/
+	//xQueueSendToBack(spi_rx_queue, &rxData, 10);
 }
 
 /*void spi_task()
@@ -148,7 +138,7 @@ void spi_init()
 	SSI3_CC_R = 0x00;
 
 	// 4. Configure the clock prescaler divisor by writing the SSI_CPSR register
-	SSI3_CPSR_R |= 8; //Divisor 2
+	SSI3_CPSR_R |= 8; //Divisor 8 = 2 Mhz
 
 	// 5. Write the SSI_CR0 register with the following config
 	// : Serial clock rate (SCR)

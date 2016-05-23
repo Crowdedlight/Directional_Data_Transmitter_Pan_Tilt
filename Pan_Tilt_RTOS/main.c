@@ -103,7 +103,7 @@ int main(void)
   /*********** Setup Queues ***********/
 
   //uart
-  uart_rx_queue = xQueueCreate(50, sizeof(INT8U));
+  uart_rx_queue = xQueueCreate(100, sizeof(INT8U));
   uart_tx_queue = xQueueCreate(50, sizeof(INT8U));
 
   //SPI
@@ -115,8 +115,8 @@ int main(void)
   pid_tilt_pos_queue  = xQueueCreate( 5, sizeof( INT16U ) );
   pid_pan_setp_queue  = xQueueCreate( 5, sizeof( INT16U ) );
   pid_tilt_setp_queue = xQueueCreate( 5, sizeof( INT16U ) );
-  pid_pan_duty_queue  = xQueueCreate( 5, sizeof( INT8U ) );
-  pid_tilt_duty_queue = xQueueCreate( 5, sizeof( INT8U ) );
+  pid_pan_duty_queue  = xQueueCreate( 5, sizeof( INT16U ) );
+  pid_tilt_duty_queue = xQueueCreate( 5, sizeof( INT16U ) );
 
   /********** Setup Semaphores **********/
 

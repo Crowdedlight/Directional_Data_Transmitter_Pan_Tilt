@@ -28,7 +28,7 @@
 /*****************************   Variables   *******************************/
 
 enum message_type { SET_TILT, SET_PAN } message;
-enum state { CLEAR, RECIEVE, INTERPRET, EXECUTE } state;
+enum state { CLEAR, RECIEVE, INTERPRET, RESPOND } state;
 
 /*****************************   Functions   *******************************/
 
@@ -99,13 +99,22 @@ void messages_rx_task()
 					xQueueSend(pid_pan_setp_queue, &coordinates, portMAX_DELAY);
 					break;
 				default:
+					state = CLEAR;
 					break;
 				}
 
 				state = CLEAR;
 
 				break;
+				//case RESPOND:
+					//INT8U o = 'O';
+					//INT8U k = 'K';
+					//xQueueSendToBack(uart_tx_queue, &o, 0);
+					//xQueueSendToBack(uart_tx_queue, &k, 0);
+					//state = CLEAR;
+					//break;
 			default:
+				//state = CLEAR;
 				break;
 		}
 	}
