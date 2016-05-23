@@ -499,11 +499,11 @@ void controller_task()
 				// Check if new set-point has been received
 				if ( xQueueReceive( pid_tilt_setp_queue, &tilt_setp, 0 ) ) {
 					tilt_setp = deg10_to_encoder_counts( tilt_setp ); // Convert from 10th of degrees to encoder counts
-					//tilt_setp = validate_tilt_setp( tilt_setp ); // Make sure tilt_setp is within the boundary
+					tilt_setp = validate_tilt_setp( tilt_setp ); // Make sure tilt_setp is within the boundary
 				}
 				if ( xQueueReceive( pid_pan_setp_queue,  &pan_setp,  0 ) ) {
 					pan_setp = deg10_to_encoder_counts( pan_setp );  // Convert from 10th of degrees to encoder counts
-					//pan_setp = validate_pan_setp( pan_setp ); // Make sure pan_setp is within the boundary
+					pan_setp = validate_pan_setp( pan_setp ); // Make sure pan_setp is within the boundary
 				}
 					
 				break;
